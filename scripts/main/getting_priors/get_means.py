@@ -1,6 +1,6 @@
-import geometric as geo
-import poisson as pois
-import zipf
+from . import geometric as geo
+from . import poisson as pois
+from . import zipf
 
 
 length_distributions = ["zipf", "geometric", "poisson"]
@@ -47,7 +47,5 @@ for len_dist in length_distributions:
 
 # organize the results for printing:
 priors = tuple(zip(lower_prior_lims.values(), upper_prior_lims.values()))
-final_priors = zip(length_distributions, priors)
+final_priors = dict(zip(length_distributions, priors))
 
-for key,val in final_priors:
-    print(f"{key}: {val}")

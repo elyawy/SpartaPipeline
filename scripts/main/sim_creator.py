@@ -1,20 +1,24 @@
 import numpy as np
 import config_reader
+from getting_priors import get_means
+
+from elyawy.sparta import Simulator
 
 length_distribution_priors = {
     "zipf": {
-        "insertion": [1.00000001, 1.93348850],
-        "deletion": [1.00000001, 1.93348850]
+        "insertion": sorted(get_means.final_priors["zipf"]),
+        "deletion": sorted(get_means.final_priors["zipf"])
     },
     "geometric": {
-        "insertion": [0.02684840, 0.33333332],
-        "deletion": [0.02684840, 0.33333332]
+        "insertion": sorted(get_means.final_priors["geometric"]),
+        "deletion": sorted(get_means.final_priors["geometric"])
     },
     "poisson": {
-        "insertion": [2.82143937, 20.0000001],
-        "deletion": [2.82143937, 20.0000001]
+        "insertion": sorted(get_means.final_priors["poisson"]),
+        "deletion": sorted(get_means.final_priors["poisson"])
     }
 }
+
 
 class SimConfig:
     def __init__(self, conf_file=None,
@@ -50,23 +54,31 @@ class SimConfig:
 
     def get_random_sim(self, num_sims):
         
-        insertion_lengths = [[i] for i in np.random.uniform(*self.len_prior_dict["insertion"], num_sims)]
+        insertion_lengths = [i for i in np.random.uniform(*self.len_prior_dict["insertion"], num_sims)]
         insertion_rates = np.random.uniform(*self.rate_prior_dict["insertion"], num_sims)
 
         if self.indel_model == "rim":
-            deletion_lengths = [[i] for i in np.random.uniform(*self.len_prior_dict["deletion"], num_sims)]
+            deletion_lengths = [i for i in np.random.uniform(*self.len_prior_dict["deletion"], num_sims)]
             deletion_rates = np.random.uniform(*self.rate_prior_dict["deletion"], num_sims)
         elif self.indel_model == "sim":
             deletion_lengths = insertion_lengths
             deletion_rates = insertion_rates
 
-        seq_length = np.random.randint(*self.sequence_length_prior, num_sims)
+        root_lengths = np.random.randint(*self.sequence_length_prior, num_sims)
 
-        len_dists = np.repeat(self.length_distribution, num_sims)
+        length_distribution = np.repeat(self.length_distribution, num_sims)
+
+        #     root_lengths: int
+        #     insertion_rates: float
+        #     deletion_rates: float
+        #     length_distribution: str
+        #     insertion_lengths: float
+        #     deletion_lengths: float
 
         return np.array([
-                seq_length,
-                len_dists,
-                insertion_lengths, deletion_lengths,
-                insertion_rates, deletion_rates,
-               ], dtype=object).T
+                root_lengths,
+                insertion_rates,
+                deletion_rates,
+                length_distribution,
+                insertion_lengths, deletion_lengths
+                ], dtype=object).T

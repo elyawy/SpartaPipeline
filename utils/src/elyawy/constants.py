@@ -3,10 +3,10 @@ length_distributions = ["zipf", "geometric", "poisson"]
 indel_models = ["sim","rim"]
 PARAMS_LIST = [
     "root_length",
-    "length_param_insertion",
-    "length_param_deletion",
     "insertion_rate",
-    "deletion_rate"
+    "deletion_rate",
+    "length_param_insertion",
+    "length_param_deletion"
 ]
 SUMSTATS_LIST = [f'SS_{i}' for i in range(0,27)]
 SUMSTATS_DEFINITION = {

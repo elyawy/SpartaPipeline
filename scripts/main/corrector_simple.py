@@ -10,7 +10,7 @@ from sklearn import linear_model, model_selection, exceptions
 warnings.simplefilter("ignore", category=exceptions.ConvergenceWarning)
 from scipy.stats import pearsonr
 from sim_creator import SimConfig
-import Sparta
+from elyawy.sparta import Simulator, Msa
 
 gr_parser = argparse.ArgumentParser(allow_abbrev=False)
 gr_parser.add_argument('-i','--input', action='store',metavar="Input folder", type=str, required=True)
@@ -42,16 +42,8 @@ if TREE_PATH is None or MSA_PATH is None:
     print("no fasta or tree file")
     exit()
 
-full_correction_path = pathlib.Path(MAIN_PATH, "correction")
-try:
-    os.mkdir(full_correction_path)
-except:
-    print("correction folder exists already")
 
-
-
-
-true_msa = Sparta.Msa(MSA_PATH)
+true_msa = Msa(MSA_PATH)
 seq_lengths_in_msa = [true_msa.get_shortest_seq_length(), true_msa.get_longest_seq_length()]
 
 sim_config = SimConfig(seq_lengths=seq_lengths_in_msa,
@@ -73,7 +65,7 @@ substitution_model["tree"] = tree_string
 substitution_model["mode"] = "nuc" if MODE == "NT" else "amino"
 
 def init_correction(sim_config, tree_data, num_sims):
-    simulator = Sparta.Sim(tree_data["path"])
+    simulator = Simulator(tree_data["path"])
 
     correction_list = []
     correction_list_sum_stats = []
@@ -81,10 +73,10 @@ def init_correction(sim_config, tree_data, num_sims):
     sim_params_correction = sim_config.get_random_sim(num_sims)
 
     for params in sim_params_correction:
-        numeric_params = [params[0],params[2][0], params[3][0], params[4], params[5]]
+        numeric_params = [params[0],params[1], params[2], params[4], params[5]]
         simulator.init_sim(*params)
+        sim_msa = simulator()
 
-        sim_msa = simulator.run_sim()
         correction_list.append(sim_msa.get_seq_with_indels())
         correction_list_sum_stats.append(numeric_params + sim_msa.get_sum_stats())
     
@@ -122,7 +114,7 @@ def get_regressors(msa_list, sum_stats_list, subsitution_model):
             realigned_msa, stderr = mafft_cline()
 
         realigned_msa = [s[s.index("\n"):].replace("\n","") for s in realigned_msa.split(">")[1:]]
-        realigned_sum_stats.append(Sparta.Msa(realigned_msa).get_sum_stats())
+        realigned_sum_stats.append(Msa(realigned_msa).get_sum_stats())
 
     def compute_regressors(true_stats, corrected_stats):
         X = np.array(true_stats, dtype=float)

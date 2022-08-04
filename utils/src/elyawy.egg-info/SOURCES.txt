@@ -1,0 +1,13 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+src/elyawy/__init__.py
+src/elyawy/constants.py
+src/elyawy/io.py
+src/elyawy/sparta.py
+src/elyawy.egg-info/PKG-INFO
+src/elyawy.egg-info/SOURCES.txt
+src/elyawy.egg-info/dependency_links.txt
+src/elyawy.egg-info/requires.txt
+src/elyawy.egg-info/top_level.txt

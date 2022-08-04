@@ -1,0 +1,18 @@
+Metadata-Version: 2.1
+Name: elyawy
+Version: 0.2.0
+Summary: Utilities and constants
+Home-page: https://github.com/pypa/sampleproject
+Author: Elya Wygoda
+Author-email: elya.wygoda@gmail.com
+Project-URL: Bug Tracker, https://github.com/pypa/sampleproject/issues
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# My personal python package
+
+This is a python package I built that allows me to import frequnet function and constant that i need.

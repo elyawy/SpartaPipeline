@@ -4,7 +4,7 @@ from itertools import product
 import numpy as np
 import pandas as pd
 
-from constants import *
+from .constants import *
 
 def load_sims_df(data_path=None, correction=False, sample_size=100000):
     simulations_df = []

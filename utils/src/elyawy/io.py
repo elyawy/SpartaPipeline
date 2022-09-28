@@ -1,11 +1,12 @@
 import pickle, pathlib
 from itertools import product
+
 import numpy as np
 import pandas as pd
 
-from .constants import *
+from constants import *
 
-def load_sims_df(data_path=None, correction=False):
+def load_sims_df(data_path=None, correction=False, sample_size=100000):
     simulations_df = []
     regressors_stats = {} if correction is True else None
     regressors_dict = {} if correction is True else None
@@ -29,6 +30,10 @@ def load_sims_df(data_path=None, correction=False):
             exit(1)
         temp_df = pd.read_pickle(simulations_path, compression='bz2')
         temp_df["indel_model"] = indel_model
+        if temp_df.shape[0] < sample_size:
+            print("sample size larger than number of simulations available")
+            exit(1)
+        temp_df = temp_df.sample(n=sample_size).reset_index(drop=True)
         if correction is True:
             
             temp_data = temp_df[PARAMS_LIST + SUMSTATS_LIST].values

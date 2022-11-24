@@ -9,6 +9,8 @@ from elyawy.sparta import Msa
 _parser = argparse.ArgumentParser(allow_abbrev=False)
 _parser.add_argument('-i','--input', action='store',metavar="Input folder", type=str, required=True)
 _parser.add_argument('-s','--size', action='store',metavar="Sample size", type=int, required=False, default=100000)
+_parser.add_argument('-nc','--no-correction', action='store_false')
+
 
 args = _parser.parse_args()
 
@@ -27,8 +29,9 @@ if MSA_PATH is None:
 true_msa_sum_stats = Msa(str(MSA_PATH)).get_sum_stats()
 true_msa_sum_stats = np.array(true_msa_sum_stats)
 
+CORRECTED = args.no_correction
 SAMPLE_SIZE = args.size
-sims_df, regs_dict,stats_reg_score_df = eio.load_sims_df(MAIN_PATH, correction=True, sample_size=SAMPLE_SIZE)
+sims_df, regs_dict,stats_reg_score_df = eio.load_sims_df(MAIN_PATH, correction=CORRECTED, sample_size=SAMPLE_SIZE)
 
 if stats_reg_score_df is not None:
     kept_stats_indices = stats_reg_score_df[stats_reg_score_df['pearsonr'] > 0.85].index
@@ -66,5 +69,7 @@ for label in labels:
 interim_results = pd.concat(interim_results, axis=1)
 interim_results = interim_results.fillna(0)
 
-results_path = pathlib.Path(MAIN_PATH,f"epsilon_{dist_method}_{SAMPLE_SIZE}.csv")
+corrected_str = 'non_corrected' if not CORRECTED else ''
+file_name = f"epsilon_{dist_method}_{SAMPLE_SIZE}_{corrected_str}.csv"
+results_path = pathlib.Path(MAIN_PATH,file_name)
 interim_results.to_csv(results_path)

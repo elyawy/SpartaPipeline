@@ -62,7 +62,7 @@ labels = [10,25,50,100,250,500,1000]
 interim_results = []
 for label in labels:
     top_data = sims_df.nsmallest(label, "distances")
-    top_data = top_data["length_distribution"].value_counts()/label
+    top_data = top_data[["length_distribution","indel_model"]].value_counts()/label
     top_data.rename(f"{label}", inplace=True)
     interim_results.append(top_data)
 

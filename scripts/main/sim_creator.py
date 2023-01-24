@@ -1,23 +1,38 @@
+import pickle, pathlib, os
 import numpy as np
-import config_reader
-from getting_priors import get_means
 
+import config_reader
 from elyawy.sparta import Simulator
 
-length_distribution_priors = {
-    "zipf": {
-        "insertion": sorted(get_means.final_priors["zipf"]),
-        "deletion": sorted(get_means.final_priors["zipf"])
-    },
-    "geometric": {
-        "insertion": sorted(get_means.final_priors["geometric"]),
-        "deletion": sorted(get_means.final_priors["geometric"])
-    },
-    "poisson": {
-        "insertion": sorted(get_means.final_priors["poisson"]),
-        "deletion": sorted(get_means.final_priors["poisson"])
+
+
+current_path = pathlib.Path(os.path.dirname(os.path.realpath(__file__)))
+priors_path = (current_path / 'getting_priors/priors.pickle').resolve()
+length_distribution_priors = {}
+if priors_path.exists():
+    with open(priors_path, 'rb') as handle:
+        length_distribution_priors = pickle.load(handle)
+else:
+    from getting_priors import get_means
+
+    length_distribution_priors = {
+        "zipf": {
+            "insertion": sorted(get_means.final_priors["zipf"]),
+            "deletion": sorted(get_means.final_priors["zipf"])
+        },
+        "geometric": {
+            "insertion": sorted(get_means.final_priors["geometric"]),
+            "deletion": sorted(get_means.final_priors["geometric"])
+        },
+        "poisson": {
+            "insertion": sorted(get_means.final_priors["poisson"]),
+            "deletion": sorted(get_means.final_priors["poisson"])
+        }
     }
-}
+
+    with open(priors_path, 'wb') as handle:
+        pickle.dump(length_distribution_priors, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 
 class SimConfig:

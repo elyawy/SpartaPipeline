@@ -8,7 +8,23 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from elyawy.io import load_sims_df
 from elyawy.constants import SUMSTATS_LIST
+from sklearn.base import BaseEstimator, TransformerMixin# define the transformer
 
+class StandardMemoryScaler(BaseEstimator, TransformerMixin):
+
+    def __init__(self, epsilon=1e-4):
+        self._epsilon = epsilon
+        
+    def fit(self, X, y = None):
+        self._mean = X.mean()
+        self._std = X.std()
+
+        return self
+
+    def transform(self, X):
+        X = (X-self._mean)/(self._std+self._epsilon)
+       
+        return X
 # %%
 
 _parser = argparse.ArgumentParser(allow_abbrev=False)
@@ -16,16 +32,18 @@ _parser = argparse.ArgumentParser(allow_abbrev=False)
 _parser.add_argument("-i", "--input", action='store',metavar="Input folder", type=str, required=True)
 _parser.add_argument("-s", "--size", action='store',metavar="Threshold", type=int, required=True)
 _parser.add_argument("-e", "--epsilon", action='store',metavar="Threshold", type=int, required=True)
+_parser.add_argument('-a','--aligner', action='store',metavar="Alignment program to use" , type=str, required=True)
 
 args = _parser.parse_args()
 
 MAIN_PATH = Path(args.input)
 SAMPLE_SIZE = args.size
 EPSILON = args.epsilon
+ALIGNER_NAME = args.aligner
 
 res_path = MAIN_PATH.resolve()
 print(res_path)
-full_data, regressors, reg_stats = load_sims_df(data_path=res_path, correction=True, sample_size=SAMPLE_SIZE)
+full_data, regressors, reg_stats = load_sims_df(data_path=res_path, correction=True, aligner=ALIGNER_NAME, sample_size=SAMPLE_SIZE)
 
 # %%
 full_zipf = shuffle(full_data[full_data["length_distribution"] == "zipf"])
@@ -42,8 +60,10 @@ remaining_data = shuffle(pd.concat([full_zipf[num_test:],full_geometric[num_test
 # %%
 test_data_sum_stats = test_data[SUMSTATS_LIST].astype("float")
 remaining_sum_stats = remaining_data[SUMSTATS_LIST].astype("float")
-sum_stat_cov = remaining_sum_stats.cov().values
-inv_covmat = np.linalg.inv(sum_stat_cov)
+cov = np.cov(remaining_sum_stats.T)
+cov = cov + np.eye(len(cov))*1e-4
+inv_covmat = np.linalg.inv(cov)
+
 
 # %%
 predicted_dist = remaining_data["length_distribution"].reset_index(drop=True)

@@ -1,6 +1,6 @@
-from . import geometric as geo
-from . import poisson as pois
-from . import zipf
+import geometric as geo
+import poisson as pois
+import zipf
 
 
 length_distributions = ["zipf", "geometric", "poisson"]
@@ -20,8 +20,8 @@ mean_check_map = {
 
 TRUNCATION = 150
 
-lower_mean = 3.0
-upper_mean = 20.0
+lower_mean = 1.5
+upper_mean = 25.0
 
 lower_prior_lims = {}
 upper_prior_lims = {}
@@ -49,3 +49,4 @@ for len_dist in length_distributions:
 priors = tuple(zip(lower_prior_lims.values(), upper_prior_lims.values()))
 final_priors = dict(zip(length_distributions, priors))
 
+print(final_priors)

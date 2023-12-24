@@ -1,0 +1,8 @@
+model,100
+geometric_rim,23.88059701492537
+geometric_sim,5.970149253731343
+poisson_rim,5.970149253731343
+poisson_sim,2.9850746268656714
+"poisson_sim,zipf_sim",0.0
+zipf_rim,41.7910447761194
+zipf_sim,19.402985074626866

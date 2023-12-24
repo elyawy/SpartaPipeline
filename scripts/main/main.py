@@ -67,14 +67,17 @@ INDEL_MODEL = args.model
 sim_params = sim_config.get_random_sim(NUM_SIMS)
 
 sum_stats_all = []
-for params in tqdm(sim_params) if VERBOSE else sim_params:
-    numeric_params = [params[0],params[1], params[2], params[4], params[5]]
-
-    sim.init_sim(*params)
-    sim_msa = sim()
-
-    sum_stats_all.append(np.array(numeric_params + sim_msa.get_sum_stats()))
-
+for idx,params in tqdm(enumerate(sim_params)) if VERBOSE else sim_params:
+    sim_stats = [0]*len(SUMSTATS_LIST)
+    while not any(sim_stats):
+        numeric_params = [params[0],params[1], params[2], params[4], params[5]]
+        sim.init_sim(*params)
+        sim_msa = sim()
+        sim_stats = sim_msa.get_sum_stats()
+        if not any(sim_stats):
+            replacement_params = sim_config.get_random_sim(1)
+            sim_params[idx] = replacement_params[0]
+    sum_stats_all.append(np.array(numeric_params + sim_stats))
 
 sum_stats_all = np.array(sum_stats_all)
 
@@ -82,5 +85,5 @@ sum_stats_all = np.array(sum_stats_all)
 
 data_full = np.concatenate([sum_stats_all, sim_params[:,[3]]], axis=1)
 data_full = pd.DataFrame(data_full, columns=PARAMS_LIST + SUMSTATS_LIST + ["length_distribution"])
-
-data_full.to_pickle(MAIN_PATH / f"full_data_{LENGTH_DIST}_{INDEL_MODEL}.pkl", compression="bz2")
+# data_full.to_pickle(MAIN_PATH / f"full_data_{LENGTH_DIST}_{INDEL_MODEL}.pkl", compression="bz2")
+data_full.to_parquet(MAIN_PATH / f"full_data_{LENGTH_DIST}_{INDEL_MODEL}.parquet.gzip", compression="gzip")

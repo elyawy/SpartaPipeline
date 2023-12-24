@@ -38,7 +38,7 @@ else:
 class SimConfig:
     def __init__(self, conf_file=None,
                        len_dist="zipf",
-                       rate_priors=[[0.01,0.05],[0.01,0.05]],
+                       rate_priors=[[-4,-1],[-1,1]], # log
                        seq_lengths=[100,500],
                        indel_model="sim"):
         self.seed = 1
@@ -49,8 +49,8 @@ class SimConfig:
             self.len_prior_dict = length_distribution_priors[len_dist]
 
             self.rate_prior_dict = {
-                "insertion": rate_priors[0],
-                "deletion": rate_priors[1],
+                "sum_rates": rate_priors[0],
+                "ratio_rates": rate_priors[1]
             }
         else:
             configuration = config_reader.parse_conf(conf_file)
@@ -59,8 +59,8 @@ class SimConfig:
             self.length_distribution = configuration["length_distribution"]
             self.len_prior_dict = length_distribution_priors[self.length_distribution]
             self.rate_prior_dict = {
-                "insertion": rate_priors[0],
-                "deletion": rate_priors[1],
+                "sum_rates": rate_priors[0],
+                "ratio_rates": rate_priors[1],
             }
         self.sequence_length_prior = [seq_lengths[0]*0.8, seq_lengths[1]*1.1]
 
@@ -70,14 +70,20 @@ class SimConfig:
     def get_random_sim(self, num_sims):
         
         insertion_lengths = [i for i in np.random.uniform(*self.len_prior_dict["insertion"], num_sims)]
-        insertion_rates = np.random.uniform(*self.rate_prior_dict["insertion"], num_sims)
+        sum_of_rates = 10**np.random.uniform(*self.rate_prior_dict["sum_rates"], num_sims)
+        ratio_of_rates = 10**np.random.uniform(*self.rate_prior_dict["ratio_rates"], num_sims)
+
 
         if self.indel_model == "rim":
             deletion_lengths = [i for i in np.random.uniform(*self.len_prior_dict["deletion"], num_sims)]
-            deletion_rates = np.random.uniform(*self.rate_prior_dict["deletion"], num_sims)
+            deletion_rates = sum_of_rates/(ratio_of_rates+1)
+            insertion_rates = sum_of_rates - deletion_rates
+
         elif self.indel_model == "sim":
             deletion_lengths = insertion_lengths
-            deletion_rates = insertion_rates
+            deletion_rates = sum_of_rates
+            insertion_rates = sum_of_rates
+
 
         root_lengths = np.random.randint(*self.sequence_length_prior, num_sims)
 

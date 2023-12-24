@@ -1,0 +1,3 @@
+Saccharomycetaceae_3S07Q:
+rates: [0.0002, 0.001]
+try a different prior distribution

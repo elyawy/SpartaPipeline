@@ -1,10 +1,27 @@
 import pathlib, argparse, os
 import numpy as np
 import pandas as pd
-import Sparta
+
 from elyawy.constants import SUMSTATS_LIST
 from elyawy.io import load_sims_df
 from elyawy.sparta import Msa, Simulator
+from sklearn.base import BaseEstimator, TransformerMixin# define the transformer
+
+class StandardMemoryScaler(BaseEstimator, TransformerMixin):
+
+    def __init__(self, epsilon=1e-4):
+        self._epsilon = epsilon
+        
+    def fit(self, X, y = None):
+        self._mean = X.mean()
+        self._std = X.std()
+
+        return self
+
+    def transform(self, X):
+        X = (X-self._mean)/(self._std+self._epsilon)
+       
+        return X
 
 _parser = argparse.ArgumentParser(allow_abbrev=False)
 _parser.add_argument('-i','--input', action='store',metavar="Input folder", type=str, required=True)
@@ -12,6 +29,8 @@ _parser.add_argument('-i','--input', action='store',metavar="Input folder", type
 _parser.add_argument('-n','--numsim', action='store',metavar="Number of simulations" , type=int, required=True)
 # _parser.add_argument('-s','--seed', action='store',metavar="Simulation config" , type=int, required=False)
 _parser.add_argument('-l','--lengthdist', action='store',metavar="Simulation config" , type=str, required=True)
+_parser.add_argument('-nc','--no-correction', action='store_false')
+_parser.add_argument('-a','--aligner', action='store',metavar="Alignment program to use" , type=str, required=True)
 
 
 args = _parser.parse_args()
@@ -19,7 +38,8 @@ args = _parser.parse_args()
 MAIN_PATH = pathlib.Path(args.input).resolve()
 NUM_SIMS = args.numsim
 LENGTH_DISTRIBUTION = args.lengthdist
-
+CORRECTED = args.no_correction
+ALIGNER_NAME = args.aligner
 
 TREE_PATH = None
 MSA_PATH = None
@@ -39,7 +59,7 @@ empirical_msa = Msa(str(MSA_PATH))
 empirical_sum_stats = empirical_msa.get_sum_stats()
 
 # cleanup and preprocess
-full_data, regressors, regressors_stats = load_sims_df(MAIN_PATH, correction=True)
+full_data, regressors, regressors_stats = load_sims_df(data_path=res_path, correction=True, aligner=ALIGNER_NAME, sample_size=SAMPLE_SIZE)
 full_data_columns = list(full_data.columns)
 
 data_types = {column:float  for column in full_data.columns}
@@ -61,8 +81,13 @@ reorder_columns = [
 true_msa_sum_stats = np.array(empirical_sum_stats)
 kept_stats_indices = list(range(len(SUMSTATS_LIST)))
 
-if regressors_stats is not None:
-    kept_stats_indices = regressors_stats[regressors_stats['pearsonr'] > 0.85].index
+
+CORRECTION_THRESHOLD = 0.0
+
+if CORRECTED:
+    kept_stats_indices = regressors_stats[regressors_stats['pearsonr'] > CORRECTION_THRESHOLD].index
+    if CORRECTION_THRESHOLD <= 0.0:
+        kept_stats_indices = regressors_stats.index
     if len(kept_stats_indices) < 15:
         kept_stats_indices = sorted(regressors_stats.nlargest(15, 'pearsonr').index)
     SUMSTATS_LIST = [SUMSTATS_LIST[i] for i in kept_stats_indices]
@@ -71,6 +96,7 @@ simulated_sum_stats = full_data[SUMSTATS_LIST].astype(np.float32)
 
 
 cov = np.cov(simulated_sum_stats.T)
+cov = cov + np.eye(len(cov))*1e-4
 inv_covmat = np.linalg.inv(cov)
 u_minus_v = true_msa_sum_stats-simulated_sum_stats
 left = np.dot(u_minus_v, inv_covmat)
@@ -107,18 +133,20 @@ def simulate_samples(params):
         
     temp_params = params.values.tolist()[:-1]    
     temp_params = [temp_params[0]] + temp_params[2:]
-    temp_params += sim_msa.get_sum_stats()
+    sim_sum_stat =  sim_msa.get_sum_stats()
+    temp_params += sim_sum_stat
 
     temp_params = np.array(temp_params).reshape(1,-1)
     chosen_reg = f"{LENGTH_DISTRIBUTION}_{params.values[-1]}"
-    if regressors is not None:
+    if CORRECTED:
         temp_params = np.array([regressor.predict(temp_params).T for regressor in regressors[chosen_reg]])
     else:
-        temp_params = (temp_params).T
+        temp_params = (np.array(sim_sum_stat).reshape(1,-1)).T
 
     temp_params = temp_params[kept_stats_indices]
     return pd.Series(temp_params.reshape(-1).tolist(), SUMSTATS_LIST)
 sample_sum_stats = dist_samples.apply(simulate_samples, axis=1)
+
 # sample_sum_stats["length_distribution"] = LENGTH_DISTRIBUTION
 # all_sims_data = pd.concat([all_sims_data, sample_sum_stats], axis=0)
 
@@ -126,7 +154,6 @@ sample_sum_stats = dist_samples.apply(simulate_samples, axis=1)
 data_full = pd.concat([sample_sum_stats, dist_samples], axis=1)
 
 data_full = data_full[full_data_columns[:5] + SUMSTATS_LIST + full_data_columns[-2:]]
-print(data_full)
 
 
 try:
@@ -134,4 +161,6 @@ try:
 except:
     print("adequacy folder exists already")
 
-data_full.to_csv(MAIN_PATH / "adequacy" / f"{LENGTH_DISTRIBUTION}.csv")
+correction_str = "corrected" if CORRECTED else "not_corrected"
+
+data_full.to_csv(MAIN_PATH / "adequacy" / f"{LENGTH_DISTRIBUTION}_{correction_str}.csv")
